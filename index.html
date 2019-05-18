@@ -8,7 +8,7 @@
 		<link rel="stylesheet" type="text/css" href="https://tools-static.wmflabs.org/static/jquery-ui/1.11.1/jquery-ui.min.css">
 		<script>
 		$( function() {
-			$( '#add' ).click( function() {
+			$( '#add-conditon' ).click( function() {
 				addCondition();
 			} );
 
@@ -29,7 +29,7 @@
 					$( '<button class="remove">Remove</button>' ).click( function() {
 						$condition.remove();
 					} )
-				).appendTo( '.conditions' );
+				).appendTo( '#conditions' );
 			}
 
 			function autocompleteItem( request, response ) {
@@ -117,12 +117,12 @@
 					conditions += '\tOPTIONAL {\n\t\t' + variable + ' rdfs:label ' + variable + '_label FILTER (lang(' + variable + '_label) = "en") .\n\t}\n';
 				} );
 
-				var sparql = prefixes + 'SELECT ' + variables.join( ' ' ) + ' WHERE {\n' + conditions + '}';
+				var sparqlQuery = prefixes + 'SELECT ' + variables.join( ' ' ) + ' WHERE {\n' + conditions + '}';
 
-				$( '.sparql' ).text( sparql );
-				$( '.link' ).html(
+				$( '#sparql-query' ).text( sparqlQuery );
+				$( '#query-service-link' ).html(
 					$( '<a>', {
-						href: 'https://query.wikidata.org/#' + encodeURIComponent( sparql ),
+						href: 'https://query.wikidata.org/#' + encodeURIComponent( sparqlQuery ),
 						target: '_blank'
 					} ).text( 'Execute this query' )
 				);
@@ -131,12 +131,12 @@
 		</script>
 	</head>
 	<body>
-		<div class="conditions">
+		<div id="conditions">
 		</div>
-		<button id="add">Add a new condition</button><button id="generate">Generate SPARQL</button>
-		<pre class="sparql">
+		<button id="add-conditon">Add a new condition</button><button id="generate">Generate SPARQL</button>
+		<pre id="sparql-query">
 		</pre>
-		<p class="link">
+		<p id="query-service-link">
 		</p>
 	</body>
 </html>
