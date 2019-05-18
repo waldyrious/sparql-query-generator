@@ -113,8 +113,8 @@
 				variables = $.unique( variables );
 
 				$.each( variables, function( i, variable ) {
-					variables.push( variable + '_l' );
-					conditions += '\tOPTIONAL {\n\t\t' + variable + ' rdfs:label ' + variable + '_l FILTER (lang(' + variable + '_l) = "en") .\n\t}\n';
+					variables.push( variable + '_label' );
+					conditions += '\tOPTIONAL {\n\t\t' + variable + ' rdfs:label ' + variable + '_label FILTER (lang(' + variable + '_label) = "en") .\n\t}\n';
 				} );
 
 				var sparql = prefixes + 'SELECT ' + variables.join( ' ' ) + ' WHERE {\n' + conditions + '}';
