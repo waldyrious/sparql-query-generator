@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Generate your SPARQL query</title>
+		<meta charset="utf-8">
+		<script type="text/javascript" src="//tools-static.wmflabs.org/static/jquery/2.1.0/jquery.min.js"></script>
+		<script type="text/javascript" src="//tools-static.wmflabs.org/static/jquery-ui/1.11.1/jquery-ui.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="//tools-static.wmflabs.org/static/jquery-ui/1.11.1/jquery-ui.min.css">
+		<script>
+		$( function() {
+			$( '#add' ).click( function() {
+				addCondition();
+			} );
+
+			function addCondition() {
+				var $condition = $( '<p class="condition">' ).append(
+					$( '<input class="subject" placeholder="Subject">' ).autocomplete( {
+						source: autocompleteItem
+					} )
+				).append(
+					$( '<input class="predicate" placeholder="Predicate">' ).autocomplete( {
+						source: autocompleteProperty
+					} )
+				).append(
+					$( '<input class="object" placeholder="Object">' ).autocomplete( {
+						source: autocompleteItem
+					} )
+				).append(
+					$( '<button class="remove">Remove</button>' ).click( function() {
+						$condition.remove();
+					} )
+				).appendTo( '.conditions' );
+			}
+
+			function autocompleteItem( request, response ) {
+				autocomplete( 'item', request.term, response );
+			}
+
+			function autocompleteProperty( request, response ) {
+				autocomplete( 'property', request.term, response );
+			}
+
+			function autocomplete( type, search, response ) {
+				$.ajax( {
+					url: '//www.wikidata.org/w/api.php?callback=?',
+					dataType: 'jsonp',
+					data: {
+						action: 'wbsearchentities',
+						language: 'en',
+						format: 'json',
+						search: search,
+						type: type
+					},
+					success: function( data ) {
+						var map = $.map( data.search, function( item ) {
+							return {
+								label: item.label, // + '<br>' + item.description,
+								value: item.id
+							};
+						} );
+						map.push( { label: 'Variable "' + search + '"', value: search } );
+						response( map );
+					}
+				} );
+			}
+
+			function renderItem( $ul, item ) {
+				return $( '<li>' )
+					.append( '<a>' + item.label + '<br>' + item.description + '</a>' )
+					.appendTo( $ul );
+			}
+
+			addCondition();
+
+			$( '#generate' ).click( function() {
+				var prefixes = 'PREFIX wd: <http://www.wikidata.org/entity/>\n' +
+					'PREFIX wdt: <http://www.wikidata.org/prop/direct/>\n' +
+					'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n' +
+					'PREFIX p: <http://www.wikidata.org/prop/>\n' +
+					'PREFIX v: <http://www.wikidata.org/prop/statement/>\n\n';
+
+				var variables = [], conditions = '';
+
+				$( '.condition' ).each( function() {
+					var subject = $( this ).find( '.subject' ).val(),
+						predicate = $( this ).find( '.predicate' ).val(),
+						object = $( this ).find( '.object' ).val();
+
+					if ( subject.match( /q[0-9]+/i ) ) {
+						subject = 'wd:' + subject;
+					} else {
+						subject = '?' + subject;
+						variables.push( subject );
+					}
+
+					if ( predicate.match( /p[0-9]+/i ) ) {
+						predicate = 'wdt:' + predicate;
+					} else {
+						predicate = '?' + predicate;
+						variables.push( predicate );
+					}
+
+					if ( object.match( /q[0-9]+/i ) ) {
+						object = 'wd:' + object;
+					} else {
+						object = '?' + object;
+						variables.push( object );
+					}
+
+					conditions += '\t' + subject + ' ' + predicate + ' ' + object + ' .\n';
+				} );
+
+				variables = $.unique( variables );
+
+				$.each( variables, function( i, variable ) {
+					variables.push( variable + '_l' );
+					conditions += '\tOPTIONAL {\n\t\t' + variable + ' rdfs:label ' + variable + '_l FILTER (lang(' + variable + '_l) = "en") .\n\t}\n';
+				} );
+
+				var sparql = prefixes + 'SELECT ' + variables.join( ' ' ) + ' WHERE {\n' + conditions + '}';
+
+				$( '.sparql' ).text( sparql );
+				$( '.link' ).html(
+					$( '<a>', {
+						href: '//wdqs-beta.wmflabs.org/#' + encodeURIComponent( sparql ),
+						target: '_blank'
+					} ).text( 'Execute this query' )
+				);
+			} );
+		} );
+		</script>
+	</head>
+	<body>
+		<div class="conditions">
+		</div>
+		<button id="add">Add a new condition</button><button id="generate">Generate SPARQL</button>
+		<pre class="sparql">
+		</pre>
+		<p class="link">
+		</p>
+	</body>
+</html>
